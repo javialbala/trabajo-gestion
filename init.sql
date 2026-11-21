@@ -24,7 +24,9 @@ CREATE TABLE IF NOT EXISTS tasks (
     due_date TIMESTAMP NOT NULL,
     status VARCHAR(20) DEFAULT 'TODO', -- 'TODO', 'IN_PROGRESS', 'DONE'
     priority INT DEFAULT 1,             -- 1: Baja, 2: Media, 3: Alta
-    scheduled_event_id INT REFERENCES events(id) ON DELETE SET NULL
+    scheduled_event_id INT REFERENCES events(id) ON DELETE SET NULL,
+    description TEXT,
+    category VARCHAR(50) DEFAULT 'Estudio'
 );
 
 -- Usuario y datos de prueba iniciales
