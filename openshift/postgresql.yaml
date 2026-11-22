@@ -1,0 +1,71 @@
+# PostgreSQL para OpenShift: credenciales (Secret), disco (PVC), servidor (Deployment) y red interna (Service).
+# Uso: consola de OpenShift -> botón "+" (arriba a la derecha) -> Import YAML -> pegar -> Create.
+# Antes de pegarlo, cambia CAMBIAME por tu contraseña.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql
+stringData:
+  database-user: paas_user
+  database-password: "1234"
+  database-name: calendar_db
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresql
+  labels:
+    app: postgresql
+    app.openshift.io/runtime: postgresql
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: postgresql
+  template:
+    metadata:
+      labels:
+        app: postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: quay.io/sclorg/postgresql-16-c9s
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRESQL_USER
+              valueFrom: { secretKeyRef: { name: postgresql, key: database-user } }
+            - name: POSTGRESQL_PASSWORD
+              valueFrom: { secretKeyRef: { name: postgresql, key: database-password } }
+            - name: POSTGRESQL_DATABASE
+              valueFrom: { secretKeyRef: { name: postgresql, key: database-name } }
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/pgsql/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgresql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql
+spec:
+  selector:
+    app: postgresql
+  ports:
+    - port: 5432
+      targetPort: 5432
